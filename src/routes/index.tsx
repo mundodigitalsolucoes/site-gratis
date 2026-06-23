@@ -949,6 +949,7 @@ function Landing() {
       <FAQSection />
       <FinalCTA />
       <Footer />
+      <WhatsAppWidget />
     </main>
   );
 }
