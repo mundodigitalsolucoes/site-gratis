@@ -824,7 +824,7 @@ function FinalCTA() {
               <VacancyBar />
             </div>
             <div className="mt-8 flex justify-center">
-              <PrimaryButton className="!px-9 !py-5 !text-base">Quero minha vaga</PrimaryButton>
+              <PrimaryButton cta="final_quero_vaga" location="final_cta" className="!px-9 !py-5 !text-base">Quero minha vaga</PrimaryButton>
             </div>
           </div>
         </div>
