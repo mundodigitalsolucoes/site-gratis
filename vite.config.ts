@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    // Coolify needs a long-running Node server. The Lovable default target is Cloudflare,
+    // which builds a fetch handler and can make the container exit/restart in Coolify.
+    preset: "node-server",
+  },
 });
