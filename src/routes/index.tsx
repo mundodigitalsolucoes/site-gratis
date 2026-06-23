@@ -18,6 +18,8 @@ const Linkedin = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zM7.6 8h4.37v1.91h.06c.61-1.15 2.1-2.36 4.32-2.36 4.62 0 5.48 3.04 5.48 7v8.45h-4.56v-7.49c0-1.79-.03-4.1-2.5-4.1-2.5 0-2.88 1.95-2.88 3.97V22H7.6V8z"/></svg>
 );
 import logoNeg from "@/assets/logo-negativa.png.asset.json";
+import { CONTACT, trackCta, trackWhatsApp, whatsappLink, type CtaLocation } from "@/lib/analytics";
+import { WhatsAppWidget } from "@/components/WhatsAppWidget";
 
 export const Route = createFileRoute("/")({
   head: () => ({
