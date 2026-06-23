@@ -682,7 +682,14 @@ function OfferSection() {
                 </li>
               ))}
             </ul>
-            <PrimaryButton className="mt-8 w-full">Quero assinar</PrimaryButton>
+            <PrimaryButton
+              cta="offer_monthly_assinar"
+              location="offer_monthly"
+              href={whatsappLink("Olá! Quero assinar o plano mensal (R$ 47,90/mês) e garantir minha vaga.")}
+              className="mt-8 w-full"
+            >
+              Quero assinar
+            </PrimaryButton>
             <div className="mt-3 text-center text-xs text-white/50">Sem fidelidade · Cancele quando quiser</div>
           </div>
         </motion.div>
