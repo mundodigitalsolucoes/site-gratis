@@ -3,6 +3,118 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send } from "lucide-react";
 import { CONTACT, trackWhatsApp, whatsappLink } from "@/lib/analytics";
 
+const portfolioProjects = [
+  {
+    title: "Embaixada da Pizza",
+    niche: "Food / Pizzaria",
+    type: "Site",
+    url: "https://embaixasadapizza.com.br",
+    image: "/embaixada.png",
+    size: "large",
+  },
+  {
+    title: "Sauna Imperial",
+    niche: "Saúde e bem-estar",
+    type: "Site",
+    url: "https://saunaimperial.com.br",
+    image: "/sauna.png",
+    size: "large",
+  },
+  {
+    title: "Eros Auto Center",
+    niche: "Automotivo",
+    type: "Site",
+    url: "https://erosautocenter.com.br",
+    image: "/eros.png",
+    size: "small",
+  },
+  {
+    title: "Guincho Rio Preto",
+    niche: "Serviço local",
+    type: "Site",
+    url: "https://guinchoriopreto.com.br",
+    image: "/guincho.png",
+    size: "small",
+  },
+  {
+    title: "Villa Rotisseria",
+    niche: "Food / Rotisseria",
+    type: "Site",
+    url: "https://villarotisseria.com.br",
+    image: "/villa.png",
+    size: "small",
+  },
+  {
+    title: "Cliente Embaixador",
+    niche: "Promocional / Fidelização",
+    type: "LP",
+    url: "https://cliente.embaixasadapizza.com.br",
+    image: "/embaixador.png",
+    size: "small",
+  },
+  {
+    title: "Copa Villa Rotisseria",
+    niche: "Promocional / Copa do Mundo",
+    type: "LP",
+    url: "https://copa.villarotisseria.com.br",
+    image: "/copa.png",
+    size: "small",
+  },
+];
+
+function installRealPortfolio() {
+  const section = document.querySelector<HTMLElement>("section#portfolio");
+  if (!section || section.dataset.realPortfolio === "true") return;
+
+  const cards = portfolioProjects
+    .map((project) => {
+      const sizeClass =
+        project.size === "large"
+          ? "md:col-span-2 md:row-span-2 min-h-[360px]"
+          : "min-h-[260px]";
+
+      return `
+        <a href="${project.url}" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] ${sizeClass} block shadow-[0_30px_80px_-40px_rgba(0,0,0,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]">
+          <img src="${project.image}" alt="${project.title}" loading="lazy" class="absolute inset-0 h-full w-full object-cover opacity-75 transition duration-500 group-hover:scale-105 group-hover:opacity-90" />
+          <div class="absolute inset-0 bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/45 to-transparent"></div>
+          <div class="absolute inset-x-0 bottom-0 p-6">
+            <div class="mb-3 flex flex-wrap gap-2">
+              <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.type}</span>
+              <span class="inline-flex rounded-full border border-[#6178DD]/35 bg-[#374B89]/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.niche}</span>
+            </div>
+            <h3 class="text-2xl font-semibold text-white">${project.title}</h3>
+            <p class="mt-1 text-sm text-white/65">${project.url.replace("https://", "")}</p>
+            <div class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white/90 opacity-90 transition group-hover:translate-x-1">
+              Ver projeto <span aria-hidden="true">→</span>
+            </div>
+          </div>
+        </a>
+      `;
+    })
+    .join("");
+
+  section.innerHTML = `
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="mx-auto mb-16 max-w-3xl text-center">
+        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-white/60">
+          ✦ Portfólio real
+        </div>
+        <h2 class="text-balance bg-gradient-to-br from-white via-white to-white/55 bg-clip-text text-4xl font-semibold leading-[1.05] text-transparent md:text-5xl lg:text-6xl">
+          Projetos reais desenvolvidos pela Mundo Digital.
+        </h2>
+        <p class="mx-auto mt-6 max-w-2xl text-lg text-white/60">
+          Sites e landing pages criados para negócios locais, campanhas promocionais e geração de contatos qualificados.
+        </p>
+      </div>
+      <div class="grid auto-rows-[260px] gap-5 md:grid-cols-4">
+        ${cards}
+      </div>
+    </div>
+  `;
+
+  section.dataset.realPortfolio = "true";
+}
+
 export function WhatsAppWidget() {
   const [open, setOpen] = useState(false);
   const [show, setShow] = useState(false);
@@ -10,6 +122,10 @@ export function WhatsAppWidget() {
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 1500);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    installRealPortfolio();
   }, []);
 
   const handleSend = (message?: string) => {
