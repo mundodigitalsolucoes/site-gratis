@@ -4,8 +4,19 @@ import { useRef, useState } from "react";
 import {
   Check, X, ArrowRight, Sparkles, Shield, Zap, Globe, MessageCircle, MapPin,
   Search, Smartphone, HeadphonesIcon, Wrench, ChevronDown, Star, TrendingUp,
-  Lock, Award, Clock, Phone, Mail, Instagram, Facebook, Linkedin, Flame,
+  Lock, Award, Clock, Phone, Mail, Flame,
 } from "lucide-react";
+const Instagram = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+  </svg>
+);
+const Facebook = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.7c0-.9.3-1.6 1.6-1.6h1.7V4.2C16.5 4.1 15.5 4 14.4 4c-2.3 0-3.9 1.4-3.9 4v2.8H8v3.2h2.5V22h3z"/></svg>
+);
+const Linkedin = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zM7.6 8h4.37v1.91h.06c.61-1.15 2.1-2.36 4.32-2.36 4.62 0 5.48 3.04 5.48 7v8.45h-4.56v-7.49c0-1.79-.03-4.1-2.5-4.1-2.5 0-2.88 1.95-2.88 3.97V22H7.6V8z"/></svg>
+);
 import logoNeg from "@/assets/logo-negativa.png.asset.json";
 
 export const Route = createFileRoute("/")({
