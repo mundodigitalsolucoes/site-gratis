@@ -108,10 +108,10 @@ function installRealPortfolio() {
     <div class="mx-auto max-w-7xl px-6">
       <div class="mx-auto mb-16 max-w-3xl text-center">
         <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-white/60">
-          ✦ Portfólio real
+          ✦ Portfólio
         </div>
         <h2 class="text-balance bg-gradient-to-br from-white via-white to-white/55 bg-clip-text text-4xl font-semibold leading-[1.05] text-transparent md:text-5xl lg:text-6xl">
-          Projetos reais desenvolvidos pela Mundo Digital.
+          Projetos desenvolvidos pela Mundo Digital.
         </h2>
         <p class="mx-auto mt-6 max-w-2xl text-lg text-white/60">
           Sites e landing pages criados para negócios locais, campanhas promocionais e geração de contatos qualificados.
@@ -131,6 +131,88 @@ function installRealPortfolio() {
   section.dataset.realPortfolio = "true";
 }
 
+function replaceTextInNode(root: Node, replacements: Array<[string, string]>) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+
+  nodes.forEach((node) => {
+    let text = node.nodeValue ?? "";
+    replacements.forEach(([from, to]) => {
+      text = text.replaceAll(from, to);
+    });
+    node.nodeValue = text;
+  });
+}
+
+function addSectionCtas() {
+  document.querySelectorAll<HTMLElement>("main > section").forEach((section, index) => {
+    if (section.dataset.ctaAdded === "true") return;
+    if (section.querySelector('a[href="#oferta"]')) return;
+    if (section.querySelector('a[href*="wa.me"]')) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "mt-12 flex justify-center px-6";
+    wrapper.innerHTML = `
+      <a href="#oferta" class="group relative inline-flex items-center justify-center gap-2 rounded-xl px-7 py-4 text-sm font-semibold tracking-wide text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_20px_60px_-25px_rgba(79,99,201,0.9)]" style="background: linear-gradient(135deg, #4F63C9 0%, #374B89 60%, #2F3453 100%);">
+        <span>Quero minha vaga</span>
+        <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+      </a>
+    `;
+
+    const link = wrapper.querySelector("a");
+    link?.addEventListener("click", () => {
+      trackCta({ cta: "section_quero_vaga", location: `section_${index}` as never, destination: "#oferta" });
+    });
+
+    section.appendChild(wrapper);
+    section.dataset.ctaAdded = "true";
+  });
+}
+
+function installCopyFixes() {
+  const main = document.querySelector("main");
+  if (!main || (main as HTMLElement).dataset.copyFixes === "true") return;
+
+  replaceTextInNode(main, [
+    ["Sem taxa de criação. Sem implantação. Sem burocracia.", "Sem taxa de criação. Sem burocracia."],
+    ["Mensal ou à vista. Você decide o melhor para sua empresa.", "Mensal ou anual. Você decide o melhor para sua empresa."],
+    ["Receba em até 3 dias úteis", "Receba após aprovação do layout"],
+    ["Site profissional pronto, no ar e otimizado.", "Após a aprovação do layout, seu site é publicado, otimizado e colocado no ar."],
+    ["Sem fidelidade", "Pagamento por cartão de crédito"],
+    ["Cancele quando quiser", "Cobrado por assinatura mensal"],
+  ]);
+
+  const offerSection = document.querySelector<HTMLElement>("section#oferta");
+  if (offerSection && !offerSection.querySelector("[data-payment-seal]")) {
+    const seal = document.createElement("div");
+    seal.dataset.paymentSeal = "true";
+    seal.className = "mx-auto mt-8 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-center text-sm text-white/70";
+    seal.innerHTML = `
+      <span class="font-semibold text-white">Pagamento seguro</span>
+      <span class="mx-2 text-white/30">•</span>
+      Processado pela plataforma Asaas com ambiente protegido para cartão de crédito, Pix e boleto.
+    `;
+    offerSection.querySelector(".mx-auto.max-w-7xl")?.appendChild(seal);
+  }
+
+  const footer = document.querySelector<HTMLElement>("footer");
+  if (footer && !footer.querySelector("[data-main-site-link]")) {
+    const footerTop = footer.querySelector(".md\\:col-span-2") ?? footer.querySelector("div");
+    const link = document.createElement("a");
+    link.dataset.mainSiteLink = "true";
+    link.href = "https://mundodigitalsolucoes.com.br";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "mt-4 inline-flex text-sm font-semibold text-white/80 hover:text-white transition-colors";
+    link.textContent = "mundodigitalsolucoes.com.br";
+    footerTop?.appendChild(link);
+  }
+
+  addSectionCtas();
+  (main as HTMLElement).dataset.copyFixes = "true";
+}
+
 export function WhatsAppWidget() {
   const [open, setOpen] = useState(false);
   const [show, setShow] = useState(false);
@@ -142,6 +224,7 @@ export function WhatsAppWidget() {
 
   useEffect(() => {
     installRealPortfolio();
+    installCopyFixes();
   }, []);
 
   const handleSend = (message?: string) => {
