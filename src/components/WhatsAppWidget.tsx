@@ -1,72 +1,19 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send } from "lucide-react";
-import { CONTACT, trackWhatsApp, whatsappLink } from "@/lib/analytics";
+import { CONTACT, trackCta, trackWhatsApp, whatsappLink } from "@/lib/analytics";
+
+const CHECKOUT_MENSAL_URL = "https://pay.cakto.com.br/u46m93s_939539";
+const CHECKOUT_ANUAL_URL = "https://pay.cakto.com.br/zviyrkf_939593";
 
 const portfolioProjects = [
-  {
-    title: "Embaixada da Pizza",
-    niche: "Food / Pizzaria",
-    type: "Site",
-    url: "https://embaixadadapizza.com.br",
-    image: "/embaixada.png",
-    layout: "large",
-    column: "left",
-  },
-  {
-    title: "Eros Auto Center",
-    niche: "Automotivo",
-    type: "Site",
-    url: "https://erosautocenter.com.br",
-    image: "/eros.png",
-    layout: "small",
-    column: "left",
-  },
-  {
-    title: "Guincho Rio Preto",
-    niche: "Serviço local",
-    type: "Site",
-    url: "https://guinchoriopreto.com.br",
-    image: "/guincho.png",
-    layout: "small",
-    column: "left",
-  },
-  {
-    title: "Villa Rotisseria",
-    niche: "Food / Rotisseria",
-    type: "Site",
-    url: "https://villarotisseria.com.br",
-    image: "/villa.png",
-    layout: "small",
-    column: "left",
-  },
-  {
-    title: "Cliente Embaixador",
-    niche: "Promocional / Fidelização",
-    type: "LP",
-    url: "https://cliente.embaixadadapizza.com.br",
-    image: "/embaixador.png",
-    layout: "small",
-    column: "right",
-  },
-  {
-    title: "Copa Villa Rotisseria",
-    niche: "Promocional / Copa do Mundo",
-    type: "LP",
-    url: "https://copa.villarotisseria.com.br",
-    image: "/copa.png",
-    layout: "small",
-    column: "right",
-  },
-  {
-    title: "Sauna Imperial",
-    niche: "Saúde e bem-estar",
-    type: "Site",
-    url: "https://saunaimperial.com.br",
-    image: "/sauna.png",
-    layout: "large",
-    column: "right",
-  },
+  { title: "Embaixada da Pizza", niche: "Food / Pizzaria", type: "Site", url: "https://embaixadadapizza.com.br", image: "/embaixada.png", layout: "large", column: "left" },
+  { title: "Eros Auto Center", niche: "Automotivo", type: "Site", url: "https://erosautocenter.com.br", image: "/eros.png", layout: "small", column: "left" },
+  { title: "Guincho Rio Preto", niche: "Serviço local", type: "Site", url: "https://guinchoriopreto.com.br", image: "/guincho.png", layout: "small", column: "left" },
+  { title: "Villa Rotisseria", niche: "Food / Rotisseria", type: "Site", url: "https://villarotisseria.com.br", image: "/villa.png", layout: "small", column: "left" },
+  { title: "Cliente Embaixador", niche: "Promocional / Fidelização", type: "LP", url: "https://cliente.embaixadadapizza.com.br", image: "/embaixador.png", layout: "small", column: "right" },
+  { title: "Copa Villa Rotisseria", niche: "Promocional / Copa do Mundo", type: "LP", url: "https://copa.villarotisseria.com.br", image: "/copa.png", layout: "small", column: "right" },
+  { title: "Sauna Imperial", niche: "Saúde e bem-estar", type: "Site", url: "https://saunaimperial.com.br", image: "/sauna.png", layout: "large", column: "right" },
 ];
 
 function portfolioCard(project: (typeof portfolioProjects)[number]) {
@@ -118,12 +65,8 @@ function installRealPortfolio() {
         </p>
       </div>
       <div class="mx-auto grid max-w-5xl gap-6 md:grid-cols-2 md:items-start">
-        <div class="flex flex-col gap-6">
-          ${leftCards}
-        </div>
-        <div class="flex flex-col gap-6 md:pt-0">
-          ${rightCards}
-        </div>
+        <div class="flex flex-col gap-6">${leftCards}</div>
+        <div class="flex flex-col gap-6 md:pt-0">${rightCards}</div>
       </div>
     </div>
   `;
@@ -170,6 +113,32 @@ function addSectionCtas() {
   });
 }
 
+function installCheckoutLinks() {
+  const offerSection = document.querySelector<HTMLElement>("section#oferta");
+  if (!offerSection) return;
+
+  const anchors = Array.from(offerSection.querySelectorAll<HTMLAnchorElement>("a"));
+  anchors.forEach((anchor) => {
+    const text = anchor.textContent?.toLowerCase() ?? "";
+    const isMonthly = text.includes("quero assinar");
+    const isAnnual = text.includes("quero economizar");
+
+    if (!isMonthly && !isAnnual) return;
+
+    const checkoutUrl = isMonthly ? CHECKOUT_MENSAL_URL : CHECKOUT_ANUAL_URL;
+    anchor.href = checkoutUrl;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.addEventListener("click", () => {
+      trackCta({
+        cta: isMonthly ? "cakto_checkout_mensal" : "cakto_checkout_anual",
+        location: isMonthly ? "offer_monthly" : "offer_annual",
+        destination: checkoutUrl,
+      });
+    });
+  });
+}
+
 function installCopyFixes() {
   const main = document.querySelector("main");
   if (!main || (main as HTMLElement).dataset.copyFixes === "true") return;
@@ -179,8 +148,11 @@ function installCopyFixes() {
     ["Mensal ou à vista. Você decide o melhor para sua empresa.", "Mensal ou anual. Você decide o melhor para sua empresa."],
     ["Receba em até 3 dias úteis", "Receba após aprovação do layout"],
     ["Site profissional pronto, no ar e otimizado.", "Após a aprovação do layout, seu site é publicado, otimizado e colocado no ar."],
+    ["Sem fidelidade. Cancele quando quiser. Garantia incondicional de 7 dias.", "Pagamento por cartão de crédito. Cobrado por assinatura mensal. Garantia incondicional de 7 dias."],
     ["Sem fidelidade", "Pagamento por cartão de crédito"],
     ["Cancele quando quiser", "Cobrado por assinatura mensal"],
+    ["Pagamento à vista (12 meses)", "Plano anual (12 meses)"],
+    ["Utilizamos a Asaas, processadora regulada pelo Banco Central. Ambiente 100% seguro e criptografado.", "O pagamento é processado pela Cakto em ambiente seguro e criptografado."],
   ]);
 
   const offerSection = document.querySelector<HTMLElement>("section#oferta");
@@ -191,7 +163,7 @@ function installCopyFixes() {
     seal.innerHTML = `
       <span class="font-semibold text-white">Pagamento seguro</span>
       <span class="mx-2 text-white/30">•</span>
-      Processado pela plataforma Asaas com ambiente protegido para cartão de crédito, Pix e boleto.
+      Processado pela plataforma Cakto em ambiente protegido para cartão de crédito, Pix e boleto.
     `;
     offerSection.querySelector(".mx-auto.max-w-7xl")?.appendChild(seal);
   }
@@ -210,6 +182,7 @@ function installCopyFixes() {
   }
 
   addSectionCtas();
+  installCheckoutLinks();
   (main as HTMLElement).dataset.copyFixes = "true";
 }
 
@@ -256,11 +229,7 @@ export function WhatsAppWidget() {
                 <div className="text-sm font-semibold">Mundo Digital</div>
                 <div className="text-[11px] text-white/70">Online · responde em minutos</div>
               </div>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Fechar"
-                className="p-1.5 rounded-md hover:bg-white/10 transition"
-              >
+              <button onClick={() => setOpen(false)} aria-label="Fechar" className="p-1.5 rounded-md hover:bg-white/10 transition">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -272,11 +241,7 @@ export function WhatsAppWidget() {
                 Fale com a gente agora!
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
-                {[
-                  "Quero minha vaga",
-                  "Tenho dúvidas sobre os planos",
-                  "Quero ver exemplos",
-                ].map((q) => (
+                {["Quero minha vaga", "Tenho dúvidas sobre os planos", "Quero ver exemplos"].map((q) => (
                   <button
                     key={q}
                     onClick={() => handleSend(`Olá! ${q}.`)}
@@ -288,10 +253,7 @@ export function WhatsAppWidget() {
               </div>
             </div>
 
-            <button
-              onClick={() => handleSend()}
-              className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white py-3 flex items-center justify-center gap-2 text-sm font-semibold transition"
-            >
+            <button onClick={() => handleSend()} className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white py-3 flex items-center justify-center gap-2 text-sm font-semibold transition">
               <Send className="w-4 h-4" /> Iniciar conversa
             </button>
           </motion.div>
@@ -311,11 +273,7 @@ export function WhatsAppWidget() {
         className="group relative w-14 h-14 rounded-full bg-[#25D366] text-white shadow-[0_15px_40px_-10px_rgba(37,211,102,0.7)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
       >
         <span className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-40" />
-        {open ? (
-          <X className="w-6 h-6 relative" />
-        ) : (
-          <WaIcon className="w-7 h-7 relative" />
-        )}
+        {open ? <X className="w-6 h-6 relative" /> : <WaIcon className="w-7 h-7 relative" />}
       </motion.button>
     </div>
   );
