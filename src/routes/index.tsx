@@ -198,7 +198,7 @@ function Nav() {
             <a href="#oferta" className="hover:text-white transition-colors">Planos</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
-          <PrimaryButton className="!px-5 !py-2.5 !text-xs">Quero minha vaga</PrimaryButton>
+          <PrimaryButton cta="nav_quero_vaga" location="nav" className="!px-5 !py-2.5 !text-xs">Quero minha vaga</PrimaryButton>
         </div>
       </div>
     </header>
