@@ -851,17 +851,73 @@ function Footer() {
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-4">Contato</div>
           <ul className="space-y-3 text-sm text-white/70">
-            <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> (00) 0000-0000</li>
-            <li className="flex items-center gap-2"><MessageCircle className="w-4 h-4" /> WhatsApp</li>
-            <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> contato@mundodigital.com.br</li>
+            <li>
+              <a
+                href={whatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackWhatsApp("footer", { cta: "footer_whatsapp" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" /> WhatsApp {CONTACT.whatsappDisplay}
+              </a>
+            </li>
+            <li>
+              <a
+                href={`tel:+${CONTACT.whatsappNumber}`}
+                onClick={() => trackCta({ cta: "footer_phone", location: "footer", destination: "tel" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Phone className="w-4 h-4" /> {CONTACT.whatsappDisplay}
+              </a>
+            </li>
+            <li>
+              <a
+                href={`mailto:${CONTACT.email}`}
+                onClick={() => trackCta({ cta: "footer_email", location: "footer", destination: "email" })}
+                className="flex items-center gap-2 hover:text-white transition-colors break-all"
+              >
+                <Mail className="w-4 h-4 shrink-0" /> {CONTACT.email}
+              </a>
+            </li>
           </ul>
         </div>
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-4">Redes</div>
           <ul className="space-y-3 text-sm text-white/70">
-            <li className="flex items-center gap-2 hover:text-white cursor-pointer"><Instagram className="w-4 h-4" /> Instagram</li>
-            <li className="flex items-center gap-2 hover:text-white cursor-pointer"><Facebook className="w-4 h-4" /> Facebook</li>
-            <li className="flex items-center gap-2 hover:text-white cursor-pointer"><Linkedin className="w-4 h-4" /> LinkedIn</li>
+            <li>
+              <a
+                href={CONTACT.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackCta({ cta: "footer_instagram", location: "footer", destination: "instagram" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Instagram className="w-4 h-4" /> Instagram
+              </a>
+            </li>
+            <li>
+              <a
+                href={CONTACT.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackCta({ cta: "footer_facebook", location: "footer", destination: "facebook" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Facebook className="w-4 h-4" /> Facebook
+              </a>
+            </li>
+            <li>
+              <a
+                href={CONTACT.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackCta({ cta: "footer_linkedin", location: "footer", destination: "linkedin" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Linkedin className="w-4 h-4" /> LinkedIn
+              </a>
+            </li>
           </ul>
         </div>
       </div>
