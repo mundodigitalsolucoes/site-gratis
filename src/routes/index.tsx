@@ -92,10 +92,31 @@ function Section({
   );
 }
 
-function PrimaryButton({ children, href = "#oferta", className = "" }: { children: React.ReactNode; href?: string; className?: string }) {
+function PrimaryButton({
+  children,
+  href = "#oferta",
+  className = "",
+  cta = "primary_cta",
+  location = "hero",
+  external,
+}: {
+  children: React.ReactNode;
+  href?: string;
+  className?: string;
+  cta?: string;
+  location?: CtaLocation;
+  external?: boolean;
+}) {
+  const isExternal = external ?? /^https?:|^mailto:|^tel:/.test(href);
   return (
     <a
       href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      onClick={() => {
+        trackCta({ cta, location, destination: href });
+        if (href.includes("wa.me")) trackWhatsApp(location, { cta });
+      }}
       className={`group relative inline-flex items-center justify-center gap-2 rounded-xl px-7 py-4 text-sm font-semibold tracking-wide text-white transition-all hover:scale-[1.02] active:scale-[0.98] glow ${className}`}
       style={{ background: "linear-gradient(135deg, #4F63C9 0%, #374B89 60%, #2F3453 100%)" }}
     >
@@ -107,9 +128,24 @@ function PrimaryButton({ children, href = "#oferta", className = "" }: { childre
   );
 }
 
-function GhostButton({ children, href = "#portfolio" }: { children: React.ReactNode; href?: string }) {
+function GhostButton({
+  children,
+  href = "#portfolio",
+  cta = "ghost_cta",
+  location = "hero",
+}: {
+  children: React.ReactNode;
+  href?: string;
+  cta?: string;
+  location?: CtaLocation;
+}) {
+  const isExternal = /^https?:|^mailto:|^tel:/.test(href);
   return (
-    <a href={href}
+    <a
+      href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      onClick={() => trackCta({ cta, location, destination: href })}
       className="inline-flex items-center justify-center gap-2 rounded-xl glass px-7 py-4 text-sm font-semibold tracking-wide text-white/90 transition-all hover:bg-white/10">
       {children}
     </a>
