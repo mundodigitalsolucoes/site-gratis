@@ -18,6 +18,8 @@ const Linkedin = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zM7.6 8h4.37v1.91h.06c.61-1.15 2.1-2.36 4.32-2.36 4.62 0 5.48 3.04 5.48 7v8.45h-4.56v-7.49c0-1.79-.03-4.1-2.5-4.1-2.5 0-2.88 1.95-2.88 3.97V22H7.6V8z"/></svg>
 );
 import logoNeg from "@/assets/logo-negativa.png.asset.json";
+import { CONTACT, trackCta, trackWhatsApp, whatsappLink, type CtaLocation } from "@/lib/analytics";
+import { WhatsAppWidget } from "@/components/WhatsAppWidget";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -90,10 +92,31 @@ function Section({
   );
 }
 
-function PrimaryButton({ children, href = "#oferta", className = "" }: { children: React.ReactNode; href?: string; className?: string }) {
+function PrimaryButton({
+  children,
+  href = "#oferta",
+  className = "",
+  cta = "primary_cta",
+  location = "hero",
+  external,
+}: {
+  children: React.ReactNode;
+  href?: string;
+  className?: string;
+  cta?: string;
+  location?: CtaLocation;
+  external?: boolean;
+}) {
+  const isExternal = external ?? /^https?:|^mailto:|^tel:/.test(href);
   return (
     <a
       href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      onClick={() => {
+        trackCta({ cta, location, destination: href });
+        if (href.includes("wa.me")) trackWhatsApp(location, { cta });
+      }}
       className={`group relative inline-flex items-center justify-center gap-2 rounded-xl px-7 py-4 text-sm font-semibold tracking-wide text-white transition-all hover:scale-[1.02] active:scale-[0.98] glow ${className}`}
       style={{ background: "linear-gradient(135deg, #4F63C9 0%, #374B89 60%, #2F3453 100%)" }}
     >
@@ -105,9 +128,24 @@ function PrimaryButton({ children, href = "#oferta", className = "" }: { childre
   );
 }
 
-function GhostButton({ children, href = "#portfolio" }: { children: React.ReactNode; href?: string }) {
+function GhostButton({
+  children,
+  href = "#portfolio",
+  cta = "ghost_cta",
+  location = "hero",
+}: {
+  children: React.ReactNode;
+  href?: string;
+  cta?: string;
+  location?: CtaLocation;
+}) {
+  const isExternal = /^https?:|^mailto:|^tel:/.test(href);
   return (
-    <a href={href}
+    <a
+      href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      onClick={() => trackCta({ cta, location, destination: href })}
       className="inline-flex items-center justify-center gap-2 rounded-xl glass px-7 py-4 text-sm font-semibold tracking-wide text-white/90 transition-all hover:bg-white/10">
       {children}
     </a>
@@ -160,7 +198,7 @@ function Nav() {
             <a href="#oferta" className="hover:text-white transition-colors">Planos</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
-          <PrimaryButton className="!px-5 !py-2.5 !text-xs">Quero minha vaga</PrimaryButton>
+          <PrimaryButton cta="nav_quero_vaga" location="nav" className="!px-5 !py-2.5 !text-xs">Quero minha vaga</PrimaryButton>
         </div>
       </div>
     </header>
@@ -207,8 +245,8 @@ function Hero() {
 
         <motion.div {...fadeUp} transition={{ duration: 0.7, delay: 0.3 }}
           className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <PrimaryButton>Quero minha vaga</PrimaryButton>
-          <GhostButton>Ver exemplos</GhostButton>
+          <PrimaryButton cta="hero_quero_vaga" location="hero">Quero minha vaga</PrimaryButton>
+          <GhostButton cta="hero_ver_exemplos" location="hero">Ver exemplos</GhostButton>
         </motion.div>
 
         <motion.ul {...fadeUp} transition={{ duration: 0.7, delay: 0.4 }}
@@ -644,7 +682,14 @@ function OfferSection() {
                 </li>
               ))}
             </ul>
-            <PrimaryButton className="mt-8 w-full">Quero assinar</PrimaryButton>
+            <PrimaryButton
+              cta="offer_monthly_assinar"
+              location="offer_monthly"
+              href={whatsappLink("Olá! Quero assinar o plano mensal (R$ 47,90/mês) e garantir minha vaga.")}
+              className="mt-8 w-full"
+            >
+              Quero assinar
+            </PrimaryButton>
             <div className="mt-3 text-center text-xs text-white/50">Sem fidelidade · Cancele quando quiser</div>
           </div>
         </motion.div>
@@ -670,7 +715,14 @@ function OfferSection() {
             <li className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /> Pagamento único e simples</li>
             <li className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /> Prioridade no suporte</li>
           </ul>
-          <a href="#"
+          <a
+            href={whatsappLink("Olá! Quero o plano anual (R$ 397) e economizar R$ 177,80.")}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              trackCta({ cta: "offer_annual_economizar", location: "offer_annual", destination: "whatsapp" });
+              trackWhatsApp("offer_annual", { cta: "offer_annual_economizar" });
+            }}
             className="mt-auto pt-8">
             <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl glass-strong px-7 py-4 text-sm font-semibold text-white hover:bg-white/10 transition-all">
               Quero economizar <ArrowRight className="w-4 h-4" />
@@ -772,7 +824,7 @@ function FinalCTA() {
               <VacancyBar />
             </div>
             <div className="mt-8 flex justify-center">
-              <PrimaryButton className="!px-9 !py-5 !text-base">Quero minha vaga</PrimaryButton>
+              <PrimaryButton cta="final_quero_vaga" location="final_cta" className="!px-9 !py-5 !text-base">Quero minha vaga</PrimaryButton>
             </div>
           </div>
         </div>
@@ -799,17 +851,73 @@ function Footer() {
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-4">Contato</div>
           <ul className="space-y-3 text-sm text-white/70">
-            <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> (00) 0000-0000</li>
-            <li className="flex items-center gap-2"><MessageCircle className="w-4 h-4" /> WhatsApp</li>
-            <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> contato@mundodigital.com.br</li>
+            <li>
+              <a
+                href={whatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackWhatsApp("footer", { cta: "footer_whatsapp" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" /> WhatsApp {CONTACT.whatsappDisplay}
+              </a>
+            </li>
+            <li>
+              <a
+                href={`tel:+${CONTACT.whatsappNumber}`}
+                onClick={() => trackCta({ cta: "footer_phone", location: "footer", destination: "tel" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Phone className="w-4 h-4" /> {CONTACT.whatsappDisplay}
+              </a>
+            </li>
+            <li>
+              <a
+                href={`mailto:${CONTACT.email}`}
+                onClick={() => trackCta({ cta: "footer_email", location: "footer", destination: "email" })}
+                className="flex items-center gap-2 hover:text-white transition-colors break-all"
+              >
+                <Mail className="w-4 h-4 shrink-0" /> {CONTACT.email}
+              </a>
+            </li>
           </ul>
         </div>
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-4">Redes</div>
           <ul className="space-y-3 text-sm text-white/70">
-            <li className="flex items-center gap-2 hover:text-white cursor-pointer"><Instagram className="w-4 h-4" /> Instagram</li>
-            <li className="flex items-center gap-2 hover:text-white cursor-pointer"><Facebook className="w-4 h-4" /> Facebook</li>
-            <li className="flex items-center gap-2 hover:text-white cursor-pointer"><Linkedin className="w-4 h-4" /> LinkedIn</li>
+            <li>
+              <a
+                href={CONTACT.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackCta({ cta: "footer_instagram", location: "footer", destination: "instagram" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Instagram className="w-4 h-4" /> Instagram
+              </a>
+            </li>
+            <li>
+              <a
+                href={CONTACT.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackCta({ cta: "footer_facebook", location: "footer", destination: "facebook" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Facebook className="w-4 h-4" /> Facebook
+              </a>
+            </li>
+            <li>
+              <a
+                href={CONTACT.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackCta({ cta: "footer_linkedin", location: "footer", destination: "linkedin" })}
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Linkedin className="w-4 h-4" /> LinkedIn
+              </a>
+            </li>
           </ul>
         </div>
       </div>
@@ -841,6 +949,7 @@ function Landing() {
       <FAQSection />
       <FinalCTA />
       <Footer />
+      <WhatsAppWidget />
     </main>
   );
 }

@@ -1,0 +1,118 @@
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MessageCircle, X, Send } from "lucide-react";
+import { CONTACT, trackWhatsApp, whatsappLink } from "@/lib/analytics";
+
+export function WhatsAppWidget() {
+  const [open, setOpen] = useState(false);
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleSend = (message?: string) => {
+    trackWhatsApp("whatsapp_widget", { intent: message ? "preset" : "open_chat" });
+    window.open(whatsappLink(message), "_blank", "noopener,noreferrer");
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="w-[320px] rounded-2xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] border border-white/10"
+            role="dialog"
+            aria-label="Atendimento via WhatsApp"
+          >
+            {/* Header */}
+            <div className="px-4 py-3 flex items-center gap-3 bg-[#075E54] text-white">
+              <div className="relative w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                <MessageCircle className="w-5 h-5" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#075E54]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold">Mundo Digital</div>
+                <div className="text-[11px] text-white/70">Online · responde em minutos</div>
+              </div>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Fechar"
+                className="p-1.5 rounded-md hover:bg-white/10 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="bg-[#ECE5DD] p-4 space-y-3 text-[13px]">
+              <div className="bg-white rounded-lg rounded-tl-none p-3 shadow-sm text-[#111] max-w-[85%]">
+                Olá! 👋 Quer garantir uma das últimas vagas da campanha
+                <strong> &ldquo;Sua empresa ganha um site profissional&rdquo;</strong>?
+                Fale com a gente agora!
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  "Quero minha vaga",
+                  "Tenho dúvidas sobre os planos",
+                  "Quero ver exemplos",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleSend(`Olá! ${q}.`)}
+                    className="text-xs bg-white text-[#075E54] border border-[#075E54]/30 rounded-full px-3 py-1.5 hover:bg-[#075E54] hover:text-white transition"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <button
+              onClick={() => handleSend()}
+              className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white py-3 flex items-center justify-center gap-2 text-sm font-semibold transition"
+            >
+              <Send className="w-4 h-4" /> Iniciar conversa
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next) trackWhatsApp("whatsapp_widget", { intent: "open_widget" });
+        }}
+        aria-label={open ? "Fechar WhatsApp" : `Falar no WhatsApp ${CONTACT.whatsappDisplay}`}
+        className="group relative w-14 h-14 rounded-full bg-[#25D366] text-white shadow-[0_15px_40px_-10px_rgba(37,211,102,0.7)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+      >
+        <span className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-40" />
+        {open ? (
+          <X className="w-6 h-6 relative" />
+        ) : (
+          <WaIcon className="w-7 h-7 relative" />
+        )}
+      </motion.button>
+    </div>
+  );
+}
+
+function WaIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 32 32" fill="currentColor" {...props}>
+      <path d="M19.11 17.46c-.27-.13-1.6-.79-1.85-.88-.25-.09-.43-.13-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.13-1.14-.42-2.17-1.34-.8-.71-1.34-1.59-1.5-1.86-.16-.27-.02-.41.12-.55.12-.12.27-.32.41-.48.13-.16.18-.27.27-.45.09-.18.04-.34-.02-.48-.07-.13-.61-1.47-.84-2.02-.22-.53-.45-.46-.61-.47l-.52-.01c-.18 0-.48.07-.73.34s-.96.94-.96 2.29.98 2.66 1.12 2.85c.13.18 1.93 2.95 4.68 4.13.65.28 1.16.45 1.56.58.66.21 1.25.18 1.73.11.53-.08 1.6-.65 1.83-1.28.23-.63.23-1.17.16-1.28-.07-.11-.25-.18-.52-.32zM16.03 4C9.39 4 4 9.39 4 16c0 2.11.56 4.16 1.6 5.97L4 28l6.18-1.62A12.02 12.02 0 0 0 16.03 28c6.64 0 12.03-5.39 12.03-12S22.67 4 16.03 4zm0 21.87a9.85 9.85 0 0 1-5.02-1.37l-.36-.21-3.67.96.98-3.57-.24-.37a9.85 9.85 0 1 1 8.31 4.56z" />
+    </svg>
+  );
+}
