@@ -715,7 +715,14 @@ function OfferSection() {
             <li className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /> Pagamento único e simples</li>
             <li className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /> Prioridade no suporte</li>
           </ul>
-          <a href="#"
+          <a
+            href={whatsappLink("Olá! Quero o plano anual (R$ 397) e economizar R$ 177,80.")}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              trackCta({ cta: "offer_annual_economizar", location: "offer_annual", destination: "whatsapp" });
+              trackWhatsApp("offer_annual", { cta: "offer_annual_economizar" });
+            }}
             className="mt-auto pt-8">
             <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl glass-strong px-7 py-4 text-sm font-semibold text-white hover:bg-white/10 transition-all">
               Quero economizar <ArrowRight className="w-4 h-4" />
