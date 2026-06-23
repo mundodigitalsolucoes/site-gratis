@@ -10,15 +10,8 @@ const portfolioProjects = [
     type: "Site",
     url: "https://embaixadadapizza.com.br",
     image: "/embaixada.png",
-    size: "large",
-  },
-  {
-    title: "Sauna Imperial",
-    niche: "Saúde e bem-estar",
-    type: "Site",
-    url: "https://saunaimperial.com.br",
-    image: "/sauna.png",
-    size: "large",
+    layout: "large",
+    column: "left",
   },
   {
     title: "Eros Auto Center",
@@ -26,7 +19,8 @@ const portfolioProjects = [
     type: "Site",
     url: "https://erosautocenter.com.br",
     image: "/eros.png",
-    size: "small",
+    layout: "small",
+    column: "left",
   },
   {
     title: "Guincho Rio Preto",
@@ -34,7 +28,8 @@ const portfolioProjects = [
     type: "Site",
     url: "https://guinchoriopreto.com.br",
     image: "/guincho.png",
-    size: "small",
+    layout: "small",
+    column: "left",
   },
   {
     title: "Villa Rotisseria",
@@ -42,7 +37,8 @@ const portfolioProjects = [
     type: "Site",
     url: "https://villarotisseria.com.br",
     image: "/villa.png",
-    size: "small",
+    layout: "small",
+    column: "left",
   },
   {
     title: "Cliente Embaixador",
@@ -50,7 +46,8 @@ const portfolioProjects = [
     type: "LP",
     url: "https://cliente.embaixadadapizza.com.br",
     image: "/embaixador.png",
-    size: "small",
+    layout: "small",
+    column: "right",
   },
   {
     title: "Copa Villa Rotisseria",
@@ -58,48 +55,54 @@ const portfolioProjects = [
     type: "LP",
     url: "https://copa.villarotisseria.com.br",
     image: "/copa.png",
-    size: "small",
+    layout: "small",
+    column: "right",
+  },
+  {
+    title: "Sauna Imperial",
+    niche: "Saúde e bem-estar",
+    type: "Site",
+    url: "https://saunaimperial.com.br",
+    image: "/sauna.png",
+    layout: "large",
+    column: "right",
   },
 ];
+
+function portfolioCard(project: (typeof portfolioProjects)[number]) {
+  const isLarge = project.layout === "large";
+  const aspectRatio = isLarge ? "4 / 5" : "16 / 9";
+  const imageFitClass = isLarge ? "object-cover object-top" : "object-contain object-center p-2 md:p-3";
+  const cardBackground = isLarge ? "bg-white/[0.03]" : "bg-[#090b1f]";
+  const overlayClass = isLarge
+    ? "bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/45 to-transparent"
+    : "bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/25 to-transparent";
+
+  return `
+    <a href="${project.url}" target="_blank" rel="noopener noreferrer" class="group relative block overflow-hidden rounded-[28px] border border-white/10 ${cardBackground} shadow-[0_30px_80px_-40px_rgba(0,0,0,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]" style="aspect-ratio: ${aspectRatio};">
+      <img src="${project.image}" alt="${project.title}" loading="lazy" class="absolute inset-0 h-full w-full ${imageFitClass} opacity-85 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100" />
+      <div class="absolute inset-0 ${overlayClass}"></div>
+      <div class="absolute inset-x-0 bottom-0 p-5 md:p-6">
+        <div class="mb-3 flex flex-wrap gap-2">
+          <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.type}</span>
+          <span class="inline-flex rounded-full border border-[#6178DD]/35 bg-[#374B89]/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.niche}</span>
+        </div>
+        <h3 class="text-xl md:text-2xl font-semibold text-white">${project.title}</h3>
+        <p class="mt-1 text-xs md:text-sm text-white/65">${project.url.replace("https://", "")}</p>
+        <div class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white/90 opacity-90 transition group-hover:translate-x-1">
+          Ver projeto <span aria-hidden="true">→</span>
+        </div>
+      </div>
+    </a>
+  `;
+}
 
 function installRealPortfolio() {
   const section = document.querySelector<HTMLElement>("section#portfolio");
   if (!section || section.dataset.realPortfolio === "true") return;
 
-  const cards = portfolioProjects
-    .map((project) => {
-      const isLarge = project.size === "large";
-      const sizeClass = isLarge ? "md:col-span-2" : "md:col-span-1";
-      const aspectRatio = isLarge ? "4 / 5" : "16 / 9";
-      const imageFitClass = isLarge
-        ? "object-cover object-top"
-        : "object-contain object-center p-2 md:p-3";
-      const cardBackground = isLarge
-        ? "bg-white/[0.03]"
-        : "bg-[#090b1f]";
-      const overlayClass = isLarge
-        ? "bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/45 to-transparent"
-        : "bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/30 to-transparent";
-
-      return `
-        <a href="${project.url}" target="_blank" rel="noopener noreferrer" class="group relative block overflow-hidden rounded-3xl border border-white/10 ${cardBackground} ${sizeClass} shadow-[0_30px_80px_-40px_rgba(0,0,0,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]" style="aspect-ratio: ${aspectRatio};">
-          <img src="${project.image}" alt="${project.title}" loading="lazy" class="absolute inset-0 h-full w-full ${imageFitClass} opacity-85 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100" />
-          <div class="absolute inset-0 ${overlayClass}"></div>
-          <div class="absolute inset-x-0 bottom-0 p-5 md:p-6">
-            <div class="mb-3 flex flex-wrap gap-2">
-              <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.type}</span>
-              <span class="inline-flex rounded-full border border-[#6178DD]/35 bg-[#374B89]/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.niche}</span>
-            </div>
-            <h3 class="text-xl md:text-2xl font-semibold text-white">${project.title}</h3>
-            <p class="mt-1 text-xs md:text-sm text-white/65">${project.url.replace("https://", "")}</p>
-            <div class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white/90 opacity-90 transition group-hover:translate-x-1">
-              Ver projeto <span aria-hidden="true">→</span>
-            </div>
-          </div>
-        </a>
-      `;
-    })
-    .join("");
+  const leftCards = portfolioProjects.filter((project) => project.column === "left").map(portfolioCard).join("");
+  const rightCards = portfolioProjects.filter((project) => project.column === "right").map(portfolioCard).join("");
 
   section.innerHTML = `
     <div class="mx-auto max-w-7xl px-6">
@@ -114,8 +117,13 @@ function installRealPortfolio() {
           Sites e landing pages criados para negócios locais, campanhas promocionais e geração de contatos qualificados.
         </p>
       </div>
-      <div class="grid gap-5 sm:grid-cols-2 md:grid-cols-4">
-        ${cards}
+      <div class="mx-auto grid max-w-5xl gap-6 md:grid-cols-2 md:items-start">
+        <div class="flex flex-col gap-6">
+          ${leftCards}
+        </div>
+        <div class="flex flex-col gap-6 md:pt-0">
+          ${rightCards}
+        </div>
       </div>
     </div>
   `;
@@ -156,7 +164,6 @@ export function WhatsAppWidget() {
             role="dialog"
             aria-label="Atendimento via WhatsApp"
           >
-            {/* Header */}
             <div className="px-4 py-3 flex items-center gap-3 bg-[#075E54] text-white">
               <div className="relative w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                 <MessageCircle className="w-5 h-5" />
@@ -175,7 +182,6 @@ export function WhatsAppWidget() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="bg-[#ECE5DD] p-4 space-y-3 text-[13px]">
               <div className="bg-white rounded-lg rounded-tl-none p-3 shadow-sm text-[#111] max-w-[85%]">
                 Olá! 👋 Quer garantir uma das últimas vagas da campanha
@@ -199,7 +205,6 @@ export function WhatsAppWidget() {
               </div>
             </div>
 
-            {/* Footer */}
             <button
               onClick={() => handleSend()}
               className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white py-3 flex items-center justify-center gap-2 text-sm font-semibold transition"
