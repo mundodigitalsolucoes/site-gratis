@@ -54,15 +54,9 @@ function installRealPortfolio() {
   section.innerHTML = `
     <div class="mx-auto max-w-7xl px-6">
       <div class="mx-auto mb-16 max-w-3xl text-center">
-        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-white/60">
-          ✦ Portfólio
-        </div>
-        <h2 class="text-balance bg-gradient-to-br from-white via-white to-white/55 bg-clip-text text-4xl font-semibold leading-[1.05] text-transparent md:text-5xl lg:text-6xl">
-          Projetos desenvolvidos pela Mundo Digital.
-        </h2>
-        <p class="mx-auto mt-6 max-w-2xl text-lg text-white/60">
-          Sites e landing pages criados para negócios locais, campanhas promocionais e geração de contatos qualificados.
-        </p>
+        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-white/60">✦ Portfólio</div>
+        <h2 class="text-balance bg-gradient-to-br from-white via-white to-white/55 bg-clip-text text-4xl font-semibold leading-[1.05] text-transparent md:text-5xl lg:text-6xl">Projetos desenvolvidos pela Mundo Digital.</h2>
+        <p class="mx-auto mt-6 max-w-2xl text-lg text-white/60">Sites e landing pages criados para negócios locais, campanhas promocionais e geração de contatos qualificados.</p>
       </div>
       <div class="mx-auto grid max-w-5xl gap-6 md:grid-cols-2 md:items-start">
         <div class="flex flex-col gap-6">${leftCards}</div>
@@ -113,77 +107,105 @@ function addSectionCtas() {
   });
 }
 
+function getCheckoutTarget(anchor: HTMLAnchorElement) {
+  const text = anchor.textContent?.toLowerCase().replace(/\s+/g, " ") ?? "";
+  const href = anchor.getAttribute("href") ?? "";
+  const isMonthly = text.includes("quero assinar") || href.includes("plano mensal") || href.includes("47,90");
+  const isAnnual = text.includes("quero economizar") || href.includes("plano anual") || href.includes("397");
+
+  if (isMonthly) return { url: CHECKOUT_MENSAL_URL, cta: "cakto_checkout_mensal", location: "offer_monthly" };
+  if (isAnnual) return { url: CHECKOUT_ANUAL_URL, cta: "cakto_checkout_anual", location: "offer_annual" };
+  return null;
+}
+
 function installCheckoutLinks() {
   const offerSection = document.querySelector<HTMLElement>("section#oferta");
   if (!offerSection) return;
 
   const anchors = Array.from(offerSection.querySelectorAll<HTMLAnchorElement>("a"));
   anchors.forEach((anchor) => {
-    const text = anchor.textContent?.toLowerCase() ?? "";
-    const isMonthly = text.includes("quero assinar");
-    const isAnnual = text.includes("quero economizar");
+    const target = getCheckoutTarget(anchor);
+    if (!target) return;
 
-    if (!isMonthly && !isAnnual) return;
-
-    const checkoutUrl = isMonthly ? CHECKOUT_MENSAL_URL : CHECKOUT_ANUAL_URL;
-    anchor.href = checkoutUrl;
+    anchor.href = target.url;
     anchor.target = "_blank";
     anchor.rel = "noopener noreferrer";
-    anchor.addEventListener("click", () => {
-      trackCta({
-        cta: isMonthly ? "cakto_checkout_mensal" : "cakto_checkout_anual",
-        location: isMonthly ? "offer_monthly" : "offer_annual",
-        destination: checkoutUrl,
-      });
-    });
+    anchor.dataset.checkoutFixed = "true";
   });
+}
+
+function installCheckoutClickGuard() {
+  if (document.body.dataset.checkoutGuard === "true") return;
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      const anchor = (event.target as HTMLElement | null)?.closest?.("a") as HTMLAnchorElement | null;
+      if (!anchor || !anchor.closest("section#oferta")) return;
+
+      const target = getCheckoutTarget(anchor);
+      if (!target) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      trackCta({ cta: target.cta, location: target.location as never, destination: target.url });
+      window.open(target.url, "_blank", "noopener,noreferrer");
+    },
+    true,
+  );
+
+  document.body.dataset.checkoutGuard = "true";
 }
 
 function installCopyFixes() {
   const main = document.querySelector("main");
-  if (!main || (main as HTMLElement).dataset.copyFixes === "true") return;
+  if (!main) return;
 
-  replaceTextInNode(main, [
-    ["Sem taxa de criação. Sem implantação. Sem burocracia.", "Sem taxa de criação. Sem burocracia."],
-    ["Mensal ou à vista. Você decide o melhor para sua empresa.", "Mensal ou anual. Você decide o melhor para sua empresa."],
-    ["Receba em até 3 dias úteis", "Receba após aprovação do layout"],
-    ["Site profissional pronto, no ar e otimizado.", "Após a aprovação do layout, seu site é publicado, otimizado e colocado no ar."],
-    ["Sem fidelidade. Cancele quando quiser. Garantia incondicional de 7 dias.", "Pagamento por cartão de crédito. Cobrado por assinatura mensal. Garantia incondicional de 7 dias."],
-    ["Sem fidelidade", "Pagamento por cartão de crédito"],
-    ["Cancele quando quiser", "Cobrado por assinatura mensal"],
-    ["Pagamento à vista (12 meses)", "Plano anual (12 meses)"],
-    ["Utilizamos a Asaas, processadora regulada pelo Banco Central. Ambiente 100% seguro e criptografado.", "O pagamento é processado pela Cakto em ambiente seguro e criptografado."],
-  ]);
+  if ((main as HTMLElement).dataset.copyFixes !== "true") {
+    replaceTextInNode(main, [
+      ["Sem taxa de criação. Sem implantação. Sem burocracia.", "Sem taxa de criação. Sem burocracia."],
+      ["Mensal ou à vista. Você decide o melhor para sua empresa.", "Mensal ou anual. Você decide o melhor para sua empresa."],
+      ["Receba em até 3 dias úteis", "Receba após aprovação do layout"],
+      ["Site profissional pronto, no ar e otimizado.", "Após a aprovação do layout, seu site é publicado, otimizado e colocado no ar."],
+      ["Sem fidelidade. Cancele quando quiser. Garantia incondicional de 7 dias.", "Pagamento por cartão de crédito. Cobrado por assinatura mensal. Garantia incondicional de 7 dias."],
+      ["Sem fidelidade", "Pagamento por cartão de crédito"],
+      ["Cancele quando quiser", "Cobrado por assinatura mensal"],
+      ["Pagamento à vista (12 meses)", "Plano anual (12 meses)"],
+      ["Utilizamos a Asaas, processadora regulada pelo Banco Central. Ambiente 100% seguro e criptografado.", "O pagamento é processado pela Cakto em ambiente seguro e criptografado."],
+    ]);
 
-  const offerSection = document.querySelector<HTMLElement>("section#oferta");
-  if (offerSection && !offerSection.querySelector("[data-payment-seal]")) {
-    const seal = document.createElement("div");
-    seal.dataset.paymentSeal = "true";
-    seal.className = "mx-auto mt-8 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-center text-sm text-white/70";
-    seal.innerHTML = `
-      <span class="font-semibold text-white">Pagamento seguro</span>
-      <span class="mx-2 text-white/30">•</span>
-      Processado pela plataforma Cakto em ambiente protegido para cartão de crédito, Pix e boleto.
-    `;
-    offerSection.querySelector(".mx-auto.max-w-7xl")?.appendChild(seal);
+    const offerSection = document.querySelector<HTMLElement>("section#oferta");
+    if (offerSection && !offerSection.querySelector("[data-payment-seal]")) {
+      const seal = document.createElement("div");
+      seal.dataset.paymentSeal = "true";
+      seal.className = "mx-auto mt-8 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-center text-sm text-white/70";
+      seal.innerHTML = `
+        <span class="font-semibold text-white">Pagamento seguro</span>
+        <span class="mx-2 text-white/30">•</span>
+        Processado pela plataforma Cakto em ambiente protegido para cartão de crédito, Pix e boleto.
+      `;
+      offerSection.querySelector(".mx-auto.max-w-7xl")?.appendChild(seal);
+    }
+
+    const footer = document.querySelector<HTMLElement>("footer");
+    if (footer && !footer.querySelector("[data-main-site-link]")) {
+      const footerTop = footer.querySelector(".md\\:col-span-2") ?? footer.querySelector("div");
+      const link = document.createElement("a");
+      link.dataset.mainSiteLink = "true";
+      link.href = "https://mundodigitalsolucoes.com.br";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.className = "mt-4 inline-flex text-sm font-semibold text-white/80 hover:text-white transition-colors";
+      link.textContent = "mundodigitalsolucoes.com.br";
+      footerTop?.appendChild(link);
+    }
+
+    addSectionCtas();
+    (main as HTMLElement).dataset.copyFixes = "true";
   }
 
-  const footer = document.querySelector<HTMLElement>("footer");
-  if (footer && !footer.querySelector("[data-main-site-link]")) {
-    const footerTop = footer.querySelector(".md\\:col-span-2") ?? footer.querySelector("div");
-    const link = document.createElement("a");
-    link.dataset.mainSiteLink = "true";
-    link.href = "https://mundodigitalsolucoes.com.br";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.className = "mt-4 inline-flex text-sm font-semibold text-white/80 hover:text-white transition-colors";
-    link.textContent = "mundodigitalsolucoes.com.br";
-    footerTop?.appendChild(link);
-  }
-
-  addSectionCtas();
   installCheckoutLinks();
-  (main as HTMLElement).dataset.copyFixes = "true";
+  installCheckoutClickGuard();
 }
 
 export function WhatsAppWidget() {
@@ -196,8 +218,20 @@ export function WhatsAppWidget() {
   }, []);
 
   useEffect(() => {
-    installRealPortfolio();
-    installCopyFixes();
+    const run = () => {
+      installRealPortfolio();
+      installCopyFixes();
+    };
+
+    run();
+    const timeouts = [250, 750, 1500, 3000].map((delay) => window.setTimeout(run, delay));
+    const observer = new MutationObserver(run);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      timeouts.forEach(window.clearTimeout);
+      observer.disconnect();
+    };
   }, []);
 
   const handleSend = (message?: string) => {
@@ -242,11 +276,7 @@ export function WhatsAppWidget() {
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
                 {["Quero minha vaga", "Tenho dúvidas sobre os planos", "Quero ver exemplos"].map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => handleSend(`Olá! ${q}.`)}
-                    className="text-xs bg-white text-[#075E54] border border-[#075E54]/30 rounded-full px-3 py-1.5 hover:bg-[#075E54] hover:text-white transition"
-                  >
+                  <button key={q} onClick={() => handleSend(`Olá! ${q}.`)} className="text-xs bg-white text-[#075E54] border border-[#075E54]/30 rounded-full px-3 py-1.5 hover:bg-[#075E54] hover:text-white transition">
                     {q}
                   </button>
                 ))}
