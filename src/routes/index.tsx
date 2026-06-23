@@ -245,8 +245,8 @@ function Hero() {
 
         <motion.div {...fadeUp} transition={{ duration: 0.7, delay: 0.3 }}
           className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <PrimaryButton>Quero minha vaga</PrimaryButton>
-          <GhostButton>Ver exemplos</GhostButton>
+          <PrimaryButton cta="hero_quero_vaga" location="hero">Quero minha vaga</PrimaryButton>
+          <GhostButton cta="hero_ver_exemplos" location="hero">Ver exemplos</GhostButton>
         </motion.div>
 
         <motion.ul {...fadeUp} transition={{ duration: 0.7, delay: 0.4 }}
