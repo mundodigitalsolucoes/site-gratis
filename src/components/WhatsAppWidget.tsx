@@ -8,7 +8,7 @@ const portfolioProjects = [
     title: "Embaixada da Pizza",
     niche: "Food / Pizzaria",
     type: "Site",
-    url: "https://embaixasadapizza.com.br",
+    url: "https://embaixadadapizza.com.br",
     image: "/embaixada.png",
     size: "large",
   },
@@ -24,7 +24,7 @@ const portfolioProjects = [
     title: "Eros Auto Center",
     niche: "Automotivo",
     type: "Site",
-    url: "https://erosautocenter.com.br",
+    url: "https://eros.png",
     image: "/eros.png",
     size: "small",
   },
@@ -48,7 +48,7 @@ const portfolioProjects = [
     title: "Cliente Embaixador",
     niche: "Promocional / Fidelização",
     type: "LP",
-    url: "https://cliente.embaixasadapizza.com.br",
+    url: "https://cliente.embaixadadapizza.com.br",
     image: "/embaixador.png",
     size: "small",
   },
@@ -68,22 +68,21 @@ function installRealPortfolio() {
 
   const cards = portfolioProjects
     .map((project) => {
-      const sizeClass =
-        project.size === "large"
-          ? "md:col-span-2 md:row-span-2 min-h-[360px]"
-          : "min-h-[260px]";
+      const isLarge = project.size === "large";
+      const sizeClass = isLarge ? "md:col-span-2" : "md:col-span-1";
+      const aspectRatio = isLarge ? "4 / 5" : "9 / 16";
 
       return `
-        <a href="${project.url}" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] ${sizeClass} block shadow-[0_30px_80px_-40px_rgba(0,0,0,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]">
-          <img src="${project.image}" alt="${project.title}" loading="lazy" class="absolute inset-0 h-full w-full object-cover opacity-75 transition duration-500 group-hover:scale-105 group-hover:opacity-90" />
+        <a href="${project.url}" target="_blank" rel="noopener noreferrer" class="group relative block overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] ${sizeClass} shadow-[0_30px_80px_-40px_rgba(0,0,0,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]" style="aspect-ratio: ${aspectRatio};">
+          <img src="${project.image}" alt="${project.title}" loading="lazy" class="absolute inset-0 h-full w-full object-cover object-top opacity-80 transition duration-500 group-hover:scale-105 group-hover:opacity-95" />
           <div class="absolute inset-0 bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/45 to-transparent"></div>
-          <div class="absolute inset-x-0 bottom-0 p-6">
+          <div class="absolute inset-x-0 bottom-0 p-5 md:p-6">
             <div class="mb-3 flex flex-wrap gap-2">
               <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.type}</span>
               <span class="inline-flex rounded-full border border-[#6178DD]/35 bg-[#374B89]/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.niche}</span>
             </div>
-            <h3 class="text-2xl font-semibold text-white">${project.title}</h3>
-            <p class="mt-1 text-sm text-white/65">${project.url.replace("https://", "")}</p>
+            <h3 class="text-xl md:text-2xl font-semibold text-white">${project.title}</h3>
+            <p class="mt-1 text-xs md:text-sm text-white/65">${project.url.replace("https://", "")}</p>
             <div class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white/90 opacity-90 transition group-hover:translate-x-1">
               Ver projeto <span aria-hidden="true">→</span>
             </div>
@@ -106,7 +105,7 @@ function installRealPortfolio() {
           Sites e landing pages criados para negócios locais, campanhas promocionais e geração de contatos qualificados.
         </p>
       </div>
-      <div class="grid auto-rows-[260px] gap-5 md:grid-cols-4">
+      <div class="grid gap-5 sm:grid-cols-2 md:grid-cols-4">
         ${cards}
       </div>
     </div>
