@@ -24,7 +24,7 @@ const portfolioProjects = [
     title: "Eros Auto Center",
     niche: "Automotivo",
     type: "Site",
-    url: "https://eros.png",
+    url: "https://erosautocenter.com.br",
     image: "/eros.png",
     size: "small",
   },
@@ -70,12 +70,21 @@ function installRealPortfolio() {
     .map((project) => {
       const isLarge = project.size === "large";
       const sizeClass = isLarge ? "md:col-span-2" : "md:col-span-1";
-      const aspectRatio = isLarge ? "4 / 5" : "9 / 16";
+      const aspectRatio = isLarge ? "4 / 5" : "16 / 9";
+      const imageFitClass = isLarge
+        ? "object-cover object-top"
+        : "object-contain object-center p-2 md:p-3";
+      const cardBackground = isLarge
+        ? "bg-white/[0.03]"
+        : "bg-[#090b1f]";
+      const overlayClass = isLarge
+        ? "bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/45 to-transparent"
+        : "bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/30 to-transparent";
 
       return `
-        <a href="${project.url}" target="_blank" rel="noopener noreferrer" class="group relative block overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] ${sizeClass} shadow-[0_30px_80px_-40px_rgba(0,0,0,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]" style="aspect-ratio: ${aspectRatio};">
-          <img src="${project.image}" alt="${project.title}" loading="lazy" class="absolute inset-0 h-full w-full object-cover object-top opacity-80 transition duration-500 group-hover:scale-105 group-hover:opacity-95" />
-          <div class="absolute inset-0 bg-gradient-to-t from-[#090b1f]/95 via-[#090b1f]/45 to-transparent"></div>
+        <a href="${project.url}" target="_blank" rel="noopener noreferrer" class="group relative block overflow-hidden rounded-3xl border border-white/10 ${cardBackground} ${sizeClass} shadow-[0_30px_80px_-40px_rgba(0,0,0,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]" style="aspect-ratio: ${aspectRatio};">
+          <img src="${project.image}" alt="${project.title}" loading="lazy" class="absolute inset-0 h-full w-full ${imageFitClass} opacity-85 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100" />
+          <div class="absolute inset-0 ${overlayClass}"></div>
           <div class="absolute inset-x-0 bottom-0 p-5 md:p-6">
             <div class="mb-3 flex flex-wrap gap-2">
               <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">${project.type}</span>
