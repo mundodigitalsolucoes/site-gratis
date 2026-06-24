@@ -17,6 +17,14 @@ const GA4_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID as string | u
 const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string | undefined;
 const CLARITY_ID = import.meta.env.VITE_CLARITY_ID as string | undefined;
 
+type MetaFbq = ((...args: unknown[]) => void) & {
+  callMethod?: (...args: unknown[]) => void;
+  queue?: unknown[][];
+  push?: MetaFbq;
+  loaded?: boolean;
+  version?: string;
+};
+
 function addExternalScript(id: string, src: string, onload?: () => void) {
   if (typeof document === "undefined") return;
 
@@ -32,6 +40,38 @@ function addExternalScript(id: string, src: string, onload?: () => void) {
   script.src = src;
   if (onload) script.onload = onload;
   document.head.appendChild(script);
+}
+
+function installMetaPixel(pixelId: string) {
+  const win = window as Window & { fbq?: MetaFbq; _fbq?: MetaFbq };
+
+  if (!win.fbq) {
+    const fbq: MetaFbq = (...args: unknown[]) => {
+      if (fbq.callMethod) {
+        fbq.callMethod(...args);
+        return;
+      }
+      fbq.queue?.push(args);
+    };
+    fbq.push = fbq;
+    fbq.loaded = true;
+    fbq.version = "2.0";
+    fbq.queue = [];
+    win.fbq = fbq;
+    win._fbq = fbq;
+  }
+
+  addExternalScript("mds-meta-pixel", "https://connect.facebook.net/en_US/fbevents.js");
+  win.fbq("init", pixelId);
+  win.fbq("track", "PageView");
+}
+
+function installClarity(clarityId: string) {
+  window.clarity = window.clarity || ((...args: unknown[]) => {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: "clarity_call", args });
+  });
+  addExternalScript("mds-clarity", `https://www.clarity.ms/tag/${clarityId}`);
 }
 
 function TrackingScripts() {
@@ -51,25 +91,8 @@ function TrackingScripts() {
       });
     }
 
-    if (META_PIXEL_ID) {
-      const fbq = window.fbq || ((...args: unknown[]) => {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: "meta_pixel_call", args });
-      });
-      window.fbq = fbq;
-      addExternalScript("mds-meta-pixel", "https://connect.facebook.net/en_US/fbevents.js", () => {
-        window.fbq?.("init", META_PIXEL_ID);
-        window.fbq?.("track", "PageView");
-      });
-    }
-
-    if (CLARITY_ID) {
-      window.clarity = window.clarity || ((...args: unknown[]) => {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: "clarity_call", args });
-      });
-      addExternalScript("mds-clarity", `https://www.clarity.ms/tag/${CLARITY_ID}`);
-    }
+    if (META_PIXEL_ID) installMetaPixel(META_PIXEL_ID);
+    if (CLARITY_ID) installClarity(CLARITY_ID);
   }, []);
 
   return null;
