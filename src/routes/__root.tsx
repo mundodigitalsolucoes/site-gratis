@@ -12,6 +12,85 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
+const GTM_ID = import.meta.env.VITE_GTM_ID as string | undefined;
+const GA4_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined;
+const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string | undefined;
+const CLARITY_ID = import.meta.env.VITE_CLARITY_ID as string | undefined;
+
+function addExternalScript(id: string, src: string, onload?: () => void) {
+  if (typeof document === "undefined") return;
+
+  const existing = document.getElementById(id) as HTMLScriptElement | null;
+  if (existing) {
+    onload?.();
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.id = id;
+  script.async = true;
+  script.src = src;
+  if (onload) script.onload = onload;
+  document.head.appendChild(script);
+}
+
+function TrackingScripts() {
+  useEffect(() => {
+    window.dataLayer = window.dataLayer || [];
+
+    if (GTM_ID) {
+      window.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+      addExternalScript("mds-gtm", `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`);
+    }
+
+    if (GA4_MEASUREMENT_ID) {
+      window.gtag = window.gtag || ((...args: unknown[]) => window.dataLayer?.push(args as unknown as Record<string, unknown>));
+      addExternalScript("mds-ga4", `https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`, () => {
+        window.gtag?.("js", new Date());
+        window.gtag?.("config", GA4_MEASUREMENT_ID, { send_page_view: true });
+      });
+    }
+
+    if (META_PIXEL_ID) {
+      const fbq = window.fbq || ((...args: unknown[]) => {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: "meta_pixel_call", args });
+      });
+      window.fbq = fbq;
+      addExternalScript("mds-meta-pixel", "https://connect.facebook.net/en_US/fbevents.js", () => {
+        window.fbq?.("init", META_PIXEL_ID);
+        window.fbq?.("track", "PageView");
+      });
+    }
+
+    if (CLARITY_ID) {
+      window.clarity = window.clarity || ((...args: unknown[]) => {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: "clarity_call", args });
+      });
+      addExternalScript("mds-clarity", `https://www.clarity.ms/tag/${CLARITY_ID}`);
+    }
+  }, []);
+
+  return null;
+}
+
+function GtmNoscript() {
+  if (!GTM_ID) return null;
+
+  return (
+    <noscript>
+      <iframe
+        title="Google Tag Manager"
+        src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+        height="0"
+        width="0"
+        style={{ display: "none", visibility: "hidden" }}
+      />
+    </noscript>
+  );
+}
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -100,12 +179,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
       <body>
+        <GtmNoscript />
         {children}
+        <TrackingScripts />
         <Scripts />
       </body>
     </html>
