@@ -74,6 +74,30 @@ function installClarity(clarityId: string) {
   addExternalScript("mds-clarity", `https://www.clarity.ms/tag/${clarityId}`);
 }
 
+function trackBriefingSuccessOnce() {
+  if (typeof document === "undefined") return;
+
+  const body = document.body;
+  if (!body || body.dataset.briefingSubmitTracked === "true") return;
+
+  const successText = "Briefing recebido com sucesso";
+  const hasSuccessMessage = body.innerText?.includes(successText);
+  if (!hasSuccessMessage) return;
+
+  body.dataset.briefingSubmitTracked = "true";
+  const payload = {
+    event: "briefing_submit",
+    location: "briefing_success",
+    status: "success",
+  };
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push(payload);
+  window.gtag?.("event", "briefing_submit", payload);
+  window.fbq?.("trackCustom", "briefing_submit", payload);
+  window.clarity?.("event", "briefing_submit");
+}
+
 function TrackingScripts() {
   useEffect(() => {
     window.dataLayer = window.dataLayer || [];
@@ -93,6 +117,12 @@ function TrackingScripts() {
 
     if (META_PIXEL_ID) installMetaPixel(META_PIXEL_ID);
     if (CLARITY_ID) installClarity(CLARITY_ID);
+
+    trackBriefingSuccessOnce();
+    const observer = new MutationObserver(trackBriefingSuccessOnce);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
   }, []);
 
   return null;
