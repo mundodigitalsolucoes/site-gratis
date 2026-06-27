@@ -1,5 +1,6 @@
 import "./lib/error-capture";
 
+import { handleCaktoWebhookRequest } from "./lib/cakto-webhook";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -37,9 +38,18 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+function isCaktoWebhookRequest(request: Request) {
+  const { pathname } = new URL(request.url);
+  return pathname === "/api/webhooks/cakto";
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (isCaktoWebhookRequest(request)) {
+        return await handleCaktoWebhookRequest(request);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
