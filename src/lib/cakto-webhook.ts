@@ -18,6 +18,11 @@ type NormalizedCaktoEvent = {
   eventId: string;
 };
 
+type RequestClientContext = {
+  clientIpAddress?: string;
+  clientUserAgent?: string;
+};
+
 const ENDPOINT_NAME = "cakto-webhook";
 const SITE_URL = "https://site.mundodigitalsolucoes.com.br/";
 const META_API_VERSION = "v20.0";
@@ -131,6 +136,31 @@ function normalizePhone(phone?: string) {
   return digits || undefined;
 }
 
+function normalizeHeaderValue(value?: string | null) {
+  return value?.trim() || undefined;
+}
+
+function getClientIpAddress(headers: Headers) {
+  const cloudflareIp = normalizeHeaderValue(headers.get("cf-connecting-ip"));
+  if (cloudflareIp) return cloudflareIp;
+
+  const forwardedFor = normalizeHeaderValue(headers.get("x-forwarded-for"));
+  const firstForwardedIp = forwardedFor
+    ?.split(",")
+    .map((ip) => ip.trim())
+    .find(Boolean);
+  if (firstForwardedIp) return firstForwardedIp;
+
+  return normalizeHeaderValue(headers.get("x-real-ip"));
+}
+
+function getRequestClientContext(request: Request): RequestClientContext {
+  return {
+    clientIpAddress: getClientIpAddress(request.headers),
+    clientUserAgent: normalizeHeaderValue(request.headers.get("user-agent")),
+  };
+}
+
 function sha256(value?: string) {
   if (!value) return undefined;
   return createHash("sha256").update(value).digest("hex");
@@ -194,8 +224,8 @@ function normalizeCaktoPayload(payload: unknown, rawBody: string): NormalizedCak
 
   const status = asString(findValue(payload, ["status", "payment_status", "paymentStatus", "order_status", "orderStatus"]));
   const customerName = asString(findValue(payload, ["name", "customer_name", "customerName", "buyer_name", "buyerName"]));
-  const email = normalizeEmail(asString(findValue(payload, ["email", "customer_email", "customerEmail", "buyer_email", "buyerEmail"]))) ;
-  const phone = normalizePhone(asString(findValue(payload, ["phone", "telefone", "customer_phone", "customerPhone", "buyer_phone", "buyerPhone", "whatsapp"]))) ;
+  const email = normalizeEmail(asString(findValue(payload, ["email", "customer_email", "customerEmail", "buyer_email", "buyerEmail"])));
+  const phone = normalizePhone(asString(findValue(payload, ["phone", "telefone", "customer_phone", "customerPhone", "buyer_phone", "buyerPhone", "whatsapp"])));
   const value = normalizeMoney(findValue(payload, ["value", "amount", "total", "total_amount", "totalAmount", "paid_amount", "paidAmount", "price"]));
   const currency = asString(findValue(payload, ["currency", "moeda"])) ?? "BRL";
   const productName = asString(findValue(payload, ["product_name", "productName", "product", "produto", "item_name", "itemName"])) ?? "Site Profissional + Hospedagem Premium";
@@ -251,7 +281,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = EXTE
   }
 }
 
-async function sendMetaPurchase(event: NormalizedCaktoEvent) {
+async function sendMetaPurchase(event: NormalizedCaktoEvent, clientContext: RequestClientContext) {
   const pixelId = getEnv("META_PIXEL_ID");
   const accessToken = getEnv("META_CAPI_ACCESS_TOKEN");
 
@@ -268,6 +298,8 @@ async function sendMetaPurchase(event: NormalizedCaktoEvent) {
   const phoneHash = sha256(event.phone);
   if (emailHash) userData.em = [emailHash];
   if (phoneHash) userData.ph = [phoneHash];
+  if (clientContext.clientIpAddress) userData.client_ip_address = clientContext.clientIpAddress;
+  if (clientContext.clientUserAgent) userData.client_user_agent = clientContext.clientUserAgent;
 
   const body = {
     data: [
@@ -372,6 +404,7 @@ export async function handleCaktoWebhookRequest(request: Request) {
     return jsonResponse({ ok: false, error: "Method not allowed" }, { status: 405 });
   }
 
+  const clientContext = getRequestClientContext(request);
   const rawBody = await request.text();
   let payload: unknown;
 
@@ -388,6 +421,8 @@ export async function handleCaktoWebhookRequest(request: Request) {
   console.info("[cakto-webhook] Webhook received", {
     headerNames: safeHeaderNames(request.headers),
     contentLength: rawBody.length,
+    hasClientIpAddress: Boolean(clientContext.clientIpAddress),
+    hasClientUserAgent: Boolean(clientContext.clientUserAgent),
   });
 
   const secretValidation = validateWebhookSecret(request, payload);
@@ -414,6 +449,8 @@ export async function handleCaktoWebhookRequest(request: Request) {
     eventId: normalizedEvent.eventId,
     email: mask(normalizedEvent.email),
     phone: mask(normalizedEvent.phone),
+    hasClientIpAddress: Boolean(clientContext.clientIpAddress),
+    hasClientUserAgent: Boolean(clientContext.clientUserAgent),
   });
 
   if (!isPurchaseEvent(normalizedEvent)) {
@@ -426,7 +463,7 @@ export async function handleCaktoWebhookRequest(request: Request) {
   }
 
   const [metaResult, ga4Result] = await Promise.allSettled([
-    sendMetaPurchase(normalizedEvent),
+    sendMetaPurchase(normalizedEvent, clientContext),
     sendGa4Purchase(normalizedEvent),
   ]);
 
