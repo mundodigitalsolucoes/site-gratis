@@ -15,7 +15,20 @@ type NormalizedCaktoEvent = {
   orderId?: string;
   transactionId?: string;
   subscriptionId?: string;
+  dataId?: string;
+  fbc?: string;
+  fbp?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
   eventId: string;
+};
+
+type RequestClientContext = {
+  clientIpAddress?: string;
+  clientUserAgent?: string;
 };
 
 const ENDPOINT_NAME = "cakto-webhook";
@@ -88,6 +101,30 @@ function findValue(input: unknown, keys: string[], maxDepth = 6): unknown {
   return walk(input, 0);
 }
 
+function getPathValue(input: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, segment) => {
+    if (!isRecord(current)) return undefined;
+    const exact = current[segment];
+    if (exact !== undefined) return exact;
+
+    const normalizedSegment = normalizeKey(segment);
+    const matchingKey = Object.keys(current).find((key) => normalizeKey(key) === normalizedSegment);
+    return matchingKey ? current[matchingKey] : undefined;
+  }, input);
+}
+
+function firstValue(input: unknown, paths: string[]): unknown {
+  for (const path of paths) {
+    const value = path.includes(".") ? getPathValue(input, path) : findValue(input, [path]);
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
+}
+
+function firstString(input: unknown, paths: string[]) {
+  return asString(firstValue(input, paths));
+}
+
 function asString(value: unknown): string | undefined {
   if (typeof value === "string") return value.trim() || undefined;
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
@@ -129,6 +166,31 @@ function normalizeEmail(email?: string) {
 function normalizePhone(phone?: string) {
   const digits = phone?.replace(/\D/g, "");
   return digits || undefined;
+}
+
+function normalizeHeaderValue(value?: string | null) {
+  return value?.trim() || undefined;
+}
+
+function getClientIpAddress(headers: Headers) {
+  const cloudflareIp = normalizeHeaderValue(headers.get("cf-connecting-ip"));
+  if (cloudflareIp) return cloudflareIp;
+
+  const forwardedFor = normalizeHeaderValue(headers.get("x-forwarded-for"));
+  const firstForwardedIp = forwardedFor
+    ?.split(",")
+    .map((ip) => ip.trim())
+    .find(Boolean);
+  if (firstForwardedIp) return firstForwardedIp;
+
+  return normalizeHeaderValue(headers.get("x-real-ip"));
+}
+
+function getRequestClientContext(request: Request): RequestClientContext {
+  return {
+    clientIpAddress: getClientIpAddress(request.headers),
+    clientUserAgent: normalizeHeaderValue(request.headers.get("user-agent")),
+  };
 }
 
 function sha256(value?: string) {
@@ -189,21 +251,88 @@ function validateWebhookSecret(request: Request, payload: unknown) {
 
 function normalizeCaktoPayload(payload: unknown, rawBody: string): NormalizedCaktoEvent {
   const eventName =
-    asString(findValue(payload, ["event", "event_name", "eventName", "event_type", "eventType", "type"])) ??
+    firstString(payload, ["data.event", "event", "event_name", "eventName", "event_type", "eventType", "type"]) ??
     "cakto_webhook";
 
-  const status = asString(findValue(payload, ["status", "payment_status", "paymentStatus", "order_status", "orderStatus"]));
-  const customerName = asString(findValue(payload, ["name", "customer_name", "customerName", "buyer_name", "buyerName"]));
-  const email = normalizeEmail(asString(findValue(payload, ["email", "customer_email", "customerEmail", "buyer_email", "buyerEmail"]))) ;
-  const phone = normalizePhone(asString(findValue(payload, ["phone", "telefone", "customer_phone", "customerPhone", "buyer_phone", "buyerPhone", "whatsapp"]))) ;
-  const value = normalizeMoney(findValue(payload, ["value", "amount", "total", "total_amount", "totalAmount", "paid_amount", "paidAmount", "price"]));
-  const currency = asString(findValue(payload, ["currency", "moeda"])) ?? "BRL";
-  const productName = asString(findValue(payload, ["product_name", "productName", "product", "produto", "item_name", "itemName"])) ?? "Site Profissional + Hospedagem Premium";
-  const planName = asString(findValue(payload, ["plan_name", "planName", "offer_name", "offerName", "plano", "oferta"]));
-  const orderId = asString(findValue(payload, ["order_id", "orderId", "pedido_id", "pedidoId", "sale_id", "saleId", "checkout_id", "checkoutId"]));
-  const transactionId = asString(findValue(payload, ["transaction_id", "transactionId", "payment_id", "paymentId", "invoice_id", "invoiceId", "id_transacao"]));
-  const subscriptionId = asString(findValue(payload, ["subscription_id", "subscriptionId", "assinatura_id", "assinaturaId"]));
-  const stableId = transactionId ?? orderId ?? subscriptionId ?? stableHash(rawBody).slice(0, 24);
+  const status = firstString(payload, [
+    "data.status",
+    "status",
+    "payment_status",
+    "paymentStatus",
+    "order_status",
+    "orderStatus",
+  ]);
+  const customerName = firstString(payload, [
+    "data.customer.name",
+    "data.subscription.customer.name",
+    "customer_name",
+    "customerName",
+    "buyer_name",
+    "buyerName",
+    "name",
+  ]);
+  const email = normalizeEmail(
+    firstString(payload, [
+      "data.customer.email",
+      "data.subscription.customer.email",
+      "customer_email",
+      "customerEmail",
+      "buyer_email",
+      "buyerEmail",
+      "email",
+    ]),
+  );
+  const phone = normalizePhone(
+    firstString(payload, [
+      "data.customer.phone",
+      "data.subscription.customer.phone",
+      "customer_phone",
+      "customerPhone",
+      "buyer_phone",
+      "buyerPhone",
+      "whatsapp",
+      "telefone",
+      "phone",
+    ]),
+  );
+  const value = normalizeMoney(firstValue(payload, ["data.amount", "data.subscription.amount", "amount", "value"]));
+  const currency = firstString(payload, ["data.currency", "currency", "moeda"]) ?? "BRL";
+  const productName =
+    firstString(payload, ["data.product.name", "product_name", "productName", "product", "produto", "item_name", "itemName"]) ??
+    "Site Profissional + Hospedagem Premium";
+  const planName = firstString(payload, [
+    "data.offer.name",
+    "data.subscription.offer",
+    "offer_name",
+    "offerName",
+    "plan_name",
+    "planName",
+    "plano",
+    "oferta",
+  ]);
+  const orderId = firstString(payload, [
+    "order_id",
+    "orderId",
+    "pedido_id",
+    "pedidoId",
+    "sale_id",
+    "saleId",
+    "checkout_id",
+    "checkoutId",
+  ]);
+  const dataId = firstString(payload, ["data.id"]);
+  const dataRefId = firstString(payload, ["data.refId"]);
+  const transactionId =
+    dataId ?? dataRefId ?? firstString(payload, ["transaction_id", "transactionId", "order_id", "orderId"]);
+  const subscriptionId = firstString(payload, ["data.subscription.id", "subscription_id", "subscriptionId", "assinatura_id", "assinaturaId"]);
+  const fbc = firstString(payload, ["data.fbc", "fbc"]);
+  const fbp = firstString(payload, ["data.fbp", "fbp"]);
+  const utmSource = firstString(payload, ["data.utm_source", "utm_source", "utmSource"]);
+  const utmMedium = firstString(payload, ["data.utm_medium", "utm_medium", "utmMedium"]);
+  const utmCampaign = firstString(payload, ["data.utm_campaign", "utm_campaign", "utmCampaign"]);
+  const utmContent = firstString(payload, ["data.utm_content", "utm_content", "utmContent"]);
+  const utmTerm = firstString(payload, ["data.utm_term", "utm_term", "utmTerm"]);
+  const stableId = dataId ?? transactionId ?? orderId ?? subscriptionId ?? stableHash(rawBody).slice(0, 24);
 
   return {
     eventName,
@@ -218,6 +347,14 @@ function normalizeCaktoPayload(payload: unknown, rawBody: string): NormalizedCak
     orderId,
     transactionId,
     subscriptionId,
+    dataId,
+    fbc,
+    fbp,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmContent,
+    utmTerm,
     eventId: `cakto_${stableId}`,
   };
 }
@@ -251,7 +388,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = EXTE
   }
 }
 
-async function sendMetaPurchase(event: NormalizedCaktoEvent) {
+async function sendMetaPurchase(event: NormalizedCaktoEvent, clientContext: RequestClientContext) {
   const pixelId = getEnv("META_PIXEL_ID");
   const accessToken = getEnv("META_CAPI_ACCESS_TOKEN");
 
@@ -268,6 +405,22 @@ async function sendMetaPurchase(event: NormalizedCaktoEvent) {
   const phoneHash = sha256(event.phone);
   if (emailHash) userData.em = [emailHash];
   if (phoneHash) userData.ph = [phoneHash];
+  if (event.fbc) userData.fbc = event.fbc;
+  if (event.fbp) userData.fbp = event.fbp;
+  if (clientContext.clientIpAddress) userData.client_ip_address = clientContext.clientIpAddress;
+  if (clientContext.clientUserAgent) userData.client_user_agent = clientContext.clientUserAgent;
+
+  const customData: JsonRecord = {
+    value: event.value,
+    currency: event.currency || "BRL",
+    content_name: event.planName ? `${event.productName} - ${event.planName}` : event.productName,
+    order_id: event.transactionId ?? event.orderId ?? event.subscriptionId ?? event.eventId,
+  };
+  if (event.utmSource) customData.utm_source = event.utmSource;
+  if (event.utmMedium) customData.utm_medium = event.utmMedium;
+  if (event.utmCampaign) customData.utm_campaign = event.utmCampaign;
+  if (event.utmContent) customData.utm_content = event.utmContent;
+  if (event.utmTerm) customData.utm_term = event.utmTerm;
 
   const body = {
     data: [
@@ -278,12 +431,7 @@ async function sendMetaPurchase(event: NormalizedCaktoEvent) {
         action_source: "website",
         event_source_url: SITE_URL,
         user_data: userData,
-        custom_data: {
-          value: event.value,
-          currency: event.currency || "BRL",
-          content_name: event.planName ? `${event.productName} - ${event.planName}` : event.productName,
-          order_id: event.transactionId ?? event.orderId ?? event.subscriptionId ?? event.eventId,
-        },
+        custom_data: customData,
       },
     ],
   };
@@ -323,7 +471,7 @@ async function sendGa4Purchase(event: NormalizedCaktoEvent) {
     return { skipped: true, reason: "missing_env" };
   }
 
-  const transactionId = event.transactionId ?? event.orderId ?? event.subscriptionId ?? event.eventId;
+  const transactionId = event.dataId ?? event.transactionId ?? event.orderId ?? event.subscriptionId ?? event.eventId;
   const body = {
     client_id: buildGa4ClientId(event),
     user_id: event.email ? stableHash(event.email).slice(0, 32) : undefined,
@@ -372,6 +520,7 @@ export async function handleCaktoWebhookRequest(request: Request) {
     return jsonResponse({ ok: false, error: "Method not allowed" }, { status: 405 });
   }
 
+  const clientContext = getRequestClientContext(request);
   const rawBody = await request.text();
   let payload: unknown;
 
@@ -388,6 +537,8 @@ export async function handleCaktoWebhookRequest(request: Request) {
   console.info("[cakto-webhook] Webhook received", {
     headerNames: safeHeaderNames(request.headers),
     contentLength: rawBody.length,
+    hasClientIpAddress: Boolean(clientContext.clientIpAddress),
+    hasClientUserAgent: Boolean(clientContext.clientUserAgent),
   });
 
   const secretValidation = validateWebhookSecret(request, payload);
@@ -414,6 +565,11 @@ export async function handleCaktoWebhookRequest(request: Request) {
     eventId: normalizedEvent.eventId,
     email: mask(normalizedEvent.email),
     phone: mask(normalizedEvent.phone),
+    hasClientIpAddress: Boolean(clientContext.clientIpAddress),
+    hasClientUserAgent: Boolean(clientContext.clientUserAgent),
+    hasFbc: Boolean(normalizedEvent.fbc),
+    hasFbp: Boolean(normalizedEvent.fbp),
+    utm_campaign: normalizedEvent.utmCampaign,
   });
 
   if (!isPurchaseEvent(normalizedEvent)) {
@@ -421,12 +577,14 @@ export async function handleCaktoWebhookRequest(request: Request) {
       eventName: normalizedEvent.eventName,
       status: normalizedEvent.status,
       eventId: normalizedEvent.eventId,
+      transactionId: normalizedEvent.transactionId,
+      subscriptionId: normalizedEvent.subscriptionId,
     });
     return jsonResponse({ ok: true, skipped: true, reason: "not_purchase_event" });
   }
 
   const [metaResult, ga4Result] = await Promise.allSettled([
-    sendMetaPurchase(normalizedEvent),
+    sendMetaPurchase(normalizedEvent, clientContext),
     sendGa4Purchase(normalizedEvent),
   ]);
 
