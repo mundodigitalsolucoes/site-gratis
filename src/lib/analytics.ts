@@ -4,8 +4,9 @@
 export type CtaLocation =
   | "nav"
   | "hero"
-  | "offer_monthly"
-  | "offer_annual"
+  | "lead_form"
+  | "how_it_works"
+  | "bonus"
   | "final_cta"
   | "whatsapp_widget"
   | "footer"
@@ -45,6 +46,55 @@ export function trackCta(params: CtaEventParams) {
   trackEvent("cta_click", params);
 }
 
+export function getStoredUtmParams() {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+  return Object.fromEntries(
+    keys
+      .map((key) => [key, params.get(key) ?? window.localStorage.getItem(key) ?? undefined])
+      .filter(([, value]) => Boolean(value)),
+  );
+}
+
+export function trackLeadFormSubmit(params: Record<string, unknown> = {}) {
+  const payload = {
+    form_name: "site_profissional",
+    lead_source: "landing_page",
+    destination: "whatsapp",
+    ...getStoredUtmParams(),
+    ...params,
+  };
+  trackEvent("lead_form_submit", payload);
+  if (typeof window !== "undefined") {
+    try {
+      window.gtag?.("event", "generate_lead", payload);
+      window.fbq?.("track", "Lead", payload);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export interface LeadFormData {
+  nome: string;
+  empresa: string;
+  produtoServico: string;
+  whatsapp: string;
+}
+
+export function siteProfessionalWhatsAppLink(data: LeadFormData) {
+  const message = `Olá! Quero solicitar meu Site Profissional.
+
+Nome: ${data.nome}
+Empresa: ${data.empresa}
+Produto ou serviço: ${data.produtoServico}
+WhatsApp informado: ${data.whatsapp}
+
+Gostaria de conversar com um especialista e entender como funciona o projeto.`;
+  return `https://wa.me/${CONTACT.whatsappNumber}?text=${encodeURIComponent(message)}`;
+}
+
 export function trackWhatsApp(location: CtaLocation, extra: Record<string, unknown> = {}) {
   trackEvent("whatsapp_click", { location, ...extra });
   // Meta standard event
@@ -67,9 +117,7 @@ export const CONTACT = {
   linkedin: "https://www.linkedin.com/in/mudo-digital-solu%C3%A7%C3%B5es-834653263/",
 } as const;
 
-export function whatsappLink(
-  message = "Olá! Quero garantir minha vaga e receber meu site profissional.",
-) {
+export function whatsappLink(message = "Olá! Quero solicitar meu Site Profissional.") {
   const text = encodeURIComponent(message);
   return `https://wa.me/${CONTACT.whatsappNumber}?text=${text}`;
 }
