@@ -796,11 +796,6 @@ function HowItWorksSection({
       t: "Criamos seu site profissional",
       d: "Desenvolvemos um site moderno, rápido, responsivo e preparado para apresentar sua empresa e gerar novas oportunidades.",
     },
-    {
-      n: "05",
-      t: "Você paga apenas a hospedagem",
-      d: "Você não paga pela criação do site. Investe apenas na hospedagem profissional necessária para manter seu projeto seguro e disponível na internet.",
-    },
   ];
   return (
     <Section
